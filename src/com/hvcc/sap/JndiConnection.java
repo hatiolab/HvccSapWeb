@@ -15,7 +15,14 @@ import javax.naming.InitialContext;
  */
 public class JndiConnection implements IMesConnection {
 	
-	public static final String JNDI_NAME = "java:jboss/datasources/mes";
+	/**
+	 * JBOSS
+	 */
+	//public static final String JNDI_NAME = "java:jboss/datasources/mes";
+	/**
+	 * Tomcat
+	 */
+	public static final String JNDI_NAME = "java:comp/env/jdbc/oracle";
 
 	@Override
 	public Connection getConnection() throws Exception {

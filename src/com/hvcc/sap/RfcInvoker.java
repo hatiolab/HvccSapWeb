@@ -28,7 +28,8 @@ public class RfcInvoker {
 	 * @return
 	 * @throws Exception
 	 */
-	public Map<String, Object> callFunction(String funcName, String structureName, Map<String, Object> inputParams, List<String> outputParams) throws Exception {
+	public Map<String, Object> callFunction(String funcName, String structureName, Map<String, Object> inputParams, List<String> outputParams) 
+	throws Exception {
 		
 		Map<String, Object> retVal = new HashMap<String, Object>();
 		SapConnectionPool	sapPool		= null;
@@ -43,9 +44,7 @@ public class RfcInvoker {
 			function = sapPool.createFunction(repository, funcName);
 
 			if (function == null) {
-				String errMsg = "RFC [" + funcName + "] not found in SAP";		 
-				System.out.println(errMsg);
-				throw new Exception(errMsg);
+				throw new Exception("RFC [" + funcName + "] not found in SAP");
 			}
 
 			JCO.ParameterList input = function.getImportParameterList();

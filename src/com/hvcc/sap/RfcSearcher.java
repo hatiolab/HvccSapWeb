@@ -30,7 +30,8 @@ public class RfcSearcher {
 	 * @return
 	 * @throws Exception
 	 */
-	public Map<String, Object> callFunction(String funcName, Map<String, Object> inputParams, List<String> outputParams, String outTableName) throws Exception {
+	public Map<String, Object> callFunction(String funcName, Map<String, Object> inputParams, List<String> outputParams, String outTableName) 
+	throws Exception {
 		
 		Map<String, Object> retVal = new HashMap<String, Object>();
 		SapConnectionPool	sapPool		= null;
@@ -58,7 +59,8 @@ public class RfcSearcher {
 			this.rfcOutParams(function, outputParams, retVal);
 			
 			// output table 처리 
-			this.rfcOutTable(function, outTableName, retVal);			
+			this.rfcOutTable(function, outTableName, retVal);
+			
 		} catch (Exception e) {
 			throw e;
 			
@@ -73,28 +75,33 @@ public class RfcSearcher {
 	}
 	
 	private void rfcInputParams(JCO.Function function, Map<String, Object> inputParams) {
+		
 		JCO.ParameterList input = function.getImportParameterList();
 		if(inputParams != null && !inputParams.isEmpty()) {
 			Iterator<String> inputNameIter = inputParams.keySet().iterator();
 			while(inputNameIter.hasNext()) {
 				String inputName = inputNameIter.next();
-				input.setValue(inputParams.get(inputName), inputName);
+				Object inputValue = inputParams.get(inputName);
+				input.setValue(inputValue, inputName);
 			}
 		}
 	}
 	
 	private void rfcOutParams(JCO.Function function, List<String> outputParams, Map<String, Object> retVal) {
+		
 		if(outputParams != null && !outputParams.isEmpty()) {
 			JCO.ParameterList outputs = function.getExportParameterList();
 			Iterator<String> outputParamIter = outputParams.iterator();
 			while(outputParamIter.hasNext()) {
 				String outputName = outputParamIter.next();
-				retVal.put(outputName, outputs.getValue(outputName));
+				Object outputValue = outputs.getValue(outputName);
+				retVal.put(outputName, outputValue);
 			}
 		}
 	}
 	
 	private void rfcOutTable(JCO.Function function, String outTableName, Map<String, Object> retVal) {
+		
 		if(outTableName != null && outTableName.trim() != "") {
 			JCO.Table outTable = function.getTableParameterList().getTable(outTableName);
 			List<Map<String, Object>> outList = new ArrayList<Map<String, Object>>();
@@ -106,6 +113,7 @@ public class RfcSearcher {
 			for(int i = 0 ; i < outRowCount ; i++) {
 				outTable.setRow(i);					
 				Map<String, Object> record = new HashMap<String, Object>();
+				
 				for(int j = 0 ; j < outFieldCount ; j++) {
 					Field field = outTable.getField(j);
 					record.put(field.getName(), outTable.getString(field.getName()));
@@ -125,7 +133,8 @@ public class RfcSearcher {
 	 * @return
 	 * @throws Exception
 	 */
-	public Map<String, Object> callFunction(String funcName, Map<String, Object> inputParams, List<String> outputParams, String[] outTableNames) throws Exception {
+	public Map<String, Object> callFunction(String funcName, Map<String, Object> inputParams, List<String> outputParams, String[] outTableNames) 
+	throws Exception {
 		
 		Map<String, Object> retVal = new HashMap<String, Object>();
 		SapConnectionPool	sapPool		= null;

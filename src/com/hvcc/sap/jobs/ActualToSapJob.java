@@ -10,8 +10,10 @@ public class ActualToSapJob implements Job {
 
 	@Override
 	public void execute(JobExecutionContext arg0) throws JobExecutionException {
+		System.out.println("Actual To SAP Job started");
 		ActualToSap actualToSap = new ActualToSap();
 		actualToSap.execute();
+		System.out.println("Actual To SAP Job finished");
 	}
 
 }

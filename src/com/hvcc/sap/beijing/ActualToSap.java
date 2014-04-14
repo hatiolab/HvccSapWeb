@@ -34,8 +34,6 @@ public class ActualToSap {
 		List<String> outputParams = new ArrayList<String>();
 		outputParams.add("ES_RESULT");
 		outputParams.add("EV_IFSEQ");
-		//outputParams.add("IFRESULT");
-		//outputParams.add("IFFMSG");
 		
 		LOGGER.info("RFC [" + RFC_FUNC_NAME + "] Call!");
 		Map<String, Object> output = new RfcInvoker().callFunction(RFC_FUNC_NAME, "IS_ACT", inputParams, outputParams);
@@ -48,7 +46,6 @@ public class ActualToSap {
 	 * @throws Exception
 	 */
 	public List<Map<String, Object>> selectActuals() throws Exception {
-		//String sql = "SELECT MES_ID, IFSEQ, WERKS, ARBPL, TRIM(LOGRP) LOGRP, VAART, MATNR, BUDAT, PDDAT, ERFMG FROM INF_SAP_ACTUAL WHERE IFRESULT = 'N'";
 		String sql = "SELECT MES_ID, IFSEQ, WERKS, ARBPL, EQUNR, LOGRP, VAART, MATNR, CHARG, KUNNR, BUDAT, PDDAT, ERFMG FROM INF_SAP_ACTUAL WHERE IFRESULT = 'N'"; 
 		return new MesSearcher().search(sql);
 	}
@@ -65,7 +62,7 @@ public class ActualToSap {
 		String sql = "UPDATE INF_SAP_ACTUAL SET IFRESULT = '" + status + "' WHERE MES_ID = '" + mesId + "'";
 		return new MesUpdater().update(sql);
 	}	
-	
+		
 	/**
 	 * 실행 
 	 * 
@@ -80,10 +77,12 @@ public class ActualToSap {
 					Map<String, Object> inputParam = actuals.get(i);
 					String mesId = (String)inputParam.remove("MES_ID");
 					Map<String, Object> output = this.executeRecord(mesId, inputParam);
-					this.info(output.get("EV_IFSEQ").toString());
+					if(output != null && output.containsKey("EV_IFSEQ")) {
+						this.info("Actual result (EV_IFSEQ) : " + output.get("EV_IFSEQ").toString());
+					}
 				}
 			} else {
-				this.info("No scrap data to interface!");
+				this.info("No actual data to interface!");
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -98,8 +97,9 @@ public class ActualToSap {
 		try {
 			output = this.callRfc(inputParam);
 			this.updateStatus(mesId, "Y");
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, null, "Error - MES_ID : " + mesId + ", MSG : " + e.getMessage());
+			this.info("MES ID : " + mesId + ", Success!");
+		} catch (Throwable th) {
+			LOGGER.log(Level.SEVERE, "Error - MES_ID : " + mesId + ", MSG : " + th.getMessage(), th);
 			this.updateStatus(mesId, "E");
 		}
 		
@@ -108,7 +108,6 @@ public class ActualToSap {
 	
 	private void info(String msg) {
 		LOGGER.info(msg);
-		System.out.println(msg);
 	}
 	
 	@SuppressWarnings("rawtypes")

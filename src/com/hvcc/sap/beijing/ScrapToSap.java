@@ -15,12 +15,19 @@ import com.hvcc.sap.MesUpdater;
 import com.hvcc.sap.RfcInvoker;
 
 /**
+ * Scrap Interface : MES --> SAP
  * 
  * @author Shortstop
  */
 public class ScrapToSap {
 
+	/**
+	 * logger
+	 */
 	private static final Logger LOGGER = Logger.getLogger(ScrapToSap.class.getName());
+	/**
+	 * RFC Function Name
+	 */
 	public static final String RFC_FUNC_NAME = "ZPPG_EA_INLINE_SCRAP";
 	
 	/**
@@ -33,8 +40,6 @@ public class ScrapToSap {
 		List<String> outputParams = new ArrayList<String>();
 		outputParams.add("ES_RESULT");
 		outputParams.add("EV_IFSEQ");
-		//outputParams.add("IFRESULT");
-		//outputParams.add("IFFMSG");
 		
 		LOGGER.info("RFC [" + RFC_FUNC_NAME + "] Call!");
 		Map<String, Object> output = new RfcInvoker().callFunction(RFC_FUNC_NAME, "IS_SCRAP", inputParams, outputParams);
@@ -78,7 +83,10 @@ public class ScrapToSap {
 					Map<String, Object> inputParam = scraps.get(i);
 					String mesId = (String)inputParam.remove("MES_ID");
 					Map<String, Object> output = this.executeRecord(mesId, inputParam);
-					this.info(output.get("EV_IFSEQ").toString());
+					
+					if(output != null && output.containsKey("EV_IFSEQ")) {
+						this.info("Scrap result (EV_IFSEQ) : " + output.get("EV_IFSEQ").toString());
+					}					
 				}
 			} else {
 				this.info("No scrap data to interface!");
