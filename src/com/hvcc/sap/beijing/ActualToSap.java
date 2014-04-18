@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.logging.Level;
 
 import com.hvcc.sap.MesSearcher;
 import com.hvcc.sap.MesUpdater;
@@ -55,13 +54,21 @@ public class ActualToSap {
 	 * 
 	 * @param mesId
 	 * @param status
+	 * @param msg
 	 * @return 
 	 * @throws Exception
 	 */
-	public boolean updateStatus(String mesId, String status) throws Exception {
-		String sql = "UPDATE INF_SAP_ACTUAL SET IFRESULT = '" + status + "' WHERE MES_ID = '" + mesId + "'";
-		return new MesUpdater().update(sql);
-	}	
+	public boolean updateStatus(String mesId, String status, String msg) throws Exception {
+		String preparedSql = "UPDATE INF_SAP_ACTUAL SET IFRESULT = ?, IFFMSG = ? WHERE MES_ID = ?";
+		List parameters = new ArrayList();
+		List param = new ArrayList();
+		param.add(status);
+		param.add(msg);
+		param.add(mesId);
+		parameters.add(param);
+		int result = new MesUpdater().update(preparedSql, parameters);
+		return result > 0;
+	}
 		
 	/**
 	 * 실행 
@@ -85,8 +92,7 @@ public class ActualToSap {
 				this.info("No actual data to interface!");
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
-			LOGGER.log(Level.SEVERE, null, ex);
+			LOGGER.severe(ex.getMessage());
 		}
 	}
 	
@@ -96,11 +102,15 @@ public class ActualToSap {
 		
 		try {
 			output = this.callRfc(inputParam);
-			this.updateStatus(mesId, "Y");
+			this.updateStatus(mesId, "Y", null);
 			this.info("MES ID : " + mesId + ", Success!");
 		} catch (Throwable th) {
-			LOGGER.log(Level.SEVERE, "Error - MES_ID : " + mesId + ", MSG : " + th.getMessage(), th);
-			this.updateStatus(mesId, "E");
+			String msg = "Error - MES_ID : " + mesId + ", MSG : " + th.getMessage();
+			LOGGER.severe(msg);
+			
+			if(msg.length() > 250) 
+				msg = msg.substring(0, 250);
+			this.updateStatus(mesId, "E", msg);
 		}
 		
 		return output;

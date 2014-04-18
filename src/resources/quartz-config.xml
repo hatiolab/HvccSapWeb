@@ -5,22 +5,19 @@
     xsi:schemaLocation="http://www.quartz-scheduler.org/xml/JobSchedulingData
 	http://www.quartz-scheduler.org/xml/job_scheduling_data_1_8.xsd" version="1.8">
     <schedule>
-        <!--job>
+        <job>
             <name>ActualToSapJob</name>
-            <group>DummyGroup</group>
+            <group>Every5MinGroup</group>
             <description>This is ActualToSapJob</description>
             <job-class>com.hvcc.sap.jobs.ActualToSapJob</job-class>
         </job>
-        <trigger>
-            <cron>
-                <name>dummyTrigger</name>
-                <group>MYTRIGGER_GROUP</group>
-                <job-name>ActualToSapJob</job-name>
-                <job-group>DummyGroup</job-group>
-                <cron-expression>0/55 * * * * ?</cron-expression>
-            </cron>
-        </trigger-->        
         <job>
+            <name>ScrapToSapJob</name>
+            <group>Every10MinGroup</group>
+            <description>This is ScrapToSapJob</description>
+            <job-class>com.hvcc.sap.jobs.ScrapToSapJob</job-class>
+        </job>       
+        <!--job>
             <name>Test1Job</name>
             <group>Every5MinGroup</group>
             <description>This is Test1Job</description>
@@ -37,17 +34,26 @@
             <group>EveryDay12PMGroup</group>
             <description>This is Test3Job</description>
             <job-class>com.hvcc.sap.jobs.Test3Job</job-class>
-        </job>
+        </job-->
         <trigger>
             <cron>
                 <name>realTimeTrigger</name>
                 <group>REAL_TRIG_GROUP</group>
-                <job-name>Test1Job</job-name>
+                <job-name>ActualToSapJob</job-name>
                 <job-group>Every5MinGroup</job-group>
-                <cron-expression>0 0/5 * * * ?</cron-expression>
+                <cron-expression>0 0/1 * * * ?</cron-expression>
             </cron>
         </trigger>
         <trigger>
+            <cron>
+                <name>realTimeTrigger</name>
+                <group>REAL_TRIG_GROUP10</group>
+                <job-name>ScrapToSapJob</job-name>
+                <job-group>Every10MinGroup</job-group>
+                <cron-expression>0 0/2 * * * ?</cron-expression>
+            </cron>
+        </trigger>        
+        <!--trigger>
             <cron>
                 <name>realTimeTrigger2</name>
                 <group>REAL_TRIG_GROUP2</group>
@@ -64,23 +70,6 @@
                 <job-group>EveryDay12PMGroup</job-group>
                 <cron-expression>0 0 12 * * ?</cron-expression>
             </cron>
-        </trigger>        
-    </schedule>
-    <!--schedule>
-        <job>
-            <name>ScrapToSapJob</name>
-            <group>DummyGroup</group>
-            <description>This is ScrapToSapJob</description>
-            <job-class>com.hvcc.sap.jobs.ScrapToSapJob</job-class>
-        </job>
-        <trigger>
-            <cron>
-                <name>dummyTrigger</name>
-                <group>MYTRIGGER_GROUP</group>
-                <job-name>ScrapToSapJob</job-name>
-                <job-group>DummyGroup</job-group>
-                <cron-expression>0/50 * * * * ?</cron-expression>
-            </cron>
-        </trigger>
-    </schedule-->    
+        </trigger-->        
+    </schedule>    
 </job-scheduling-data>

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.hvcc.sap.beijing;
 
 import java.util.ArrayList;
@@ -10,24 +7,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.logging.Level;
 
 import com.hvcc.sap.MesUpdater;
 import com.hvcc.sap.RfcSearcher;
 import com.hvcc.sap.util.DateUtils;
 
-/**
- * Production Parameter SAP TO MES
- * 
- * @author Shortstop
- */
-public class ParameterToMes {
+public class MachineToMes {
 	
-	private static final Logger LOGGER = Logger.getLogger(ParameterToMes.class.getName());
-	//public static final String INSERT_SQL = "INSERT INTO INF_SAP_PARAMETER(IFSEQ, WERKS, ZPTYP, ZDEPT, ARBPL, ZMACN, MATNR, VERID, ZMKEY, ZUPH, LOTQT, VGW03, MEINS, ERDAT, ERZET, ERNAM, AEDAT, AEZET, AENAM, IFRESULT, IFFMSG, MES_STAT, MES_UPDDT) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE)";
-	public static final String INSERT_SQL = "INSERT INTO INF_SAP_PARAMETER(IFSEQ, WERKS, ZPTYP, ZDEPT, ARBPL, ZMACN, MATNR, VERID, ZMKEY, ZUPH, VGW03, ERDAT, ERZET, ERNAM, AEDAT, AEZET, AENAM, IFRESULT, IFFMSG, MES_STAT, MES_ISTDT) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE)";
-	public static final String RFC_FUNC_NAME = "ZPPG_EA_PLAN_PARAM";
-	public static final String RFC_OUT_TABLE = "ET_PARAM";
+	private static final Logger LOGGER = Logger.getLogger(MachineToMes.class.getName());
+	public static final String INSERT_SQL = "INSERT INTO INF_SAP_EQUIPMENT(IFSEQ, WERKS, ZPTYP, ZDEPT, ARBPL, ZMACN, ZMKEY, KTEXT, ZTEXT, ERDAT, ERZET, ERNAM, AEDAT, AEZET, AENAM, IFRESULT, IFFMSG, MES_STAT, MES_ISTDT) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE)";
+	public static final String RFC_FUNC_NAME = "ZRFC_PPG_EQUIPMENT";
+	public static final String RFC_OUT_TABLE = "ET_EQUIPMENT";
 	
 	/**
 	 * call rfc
@@ -73,11 +63,11 @@ public class ParameterToMes {
 				this.isEmpty(record.get("ZPTYP")) || 
 				this.isEmpty(record.get("ZDEPT")) || 
 				this.isEmpty(record.get("ARBPL")) || 
-				this.isEmpty(record.get("ZMACN")) ||
-				this.isEmpty(record.get("MATNR"))) {
-				LOGGER.log(Level.SEVERE, null, "Required field is empty!");
+				this.isEmpty(record.get("ZMACN"))) {
+				LOGGER.warning("Required field is empty!");
 				continue;
-			}			
+			}
+			
 			List<Object> parameter = new ArrayList<Object>();
 			parameter.add(record.get("IFSEQ"));
 			parameter.add(record.get("WERKS"));
@@ -85,13 +75,9 @@ public class ParameterToMes {
 			parameter.add(record.get("ZDEPT"));
 			parameter.add(record.get("ARBPL"));
 			parameter.add(record.get("ZMACN"));
-			parameter.add(record.get("MATNR"));
-			parameter.add(record.get("VERID"));
 			parameter.add(record.get("ZMKEY"));
-			parameter.add(record.get("ZUPH"));
-			//parameter.add(record.get("LOTQT"));
-			parameter.add(record.get("VGW01"));
-			//parameter.add(record.get("MEINS"));
+			parameter.add(record.get("KTEXT"));
+			parameter.add(record.get("ZTEXT"));
 			parameter.add(record.get("ERDAT"));
 			parameter.add(record.get("ERZET"));
 			parameter.add(record.get("ERNAM"));
@@ -124,19 +110,17 @@ public class ParameterToMes {
 			if("S".equals(ifresult)) {
 				List<Map<String, Object>> results = (List<Map<String, Object>>)output.get(RFC_OUT_TABLE);
 				resultCount = this.updateToMes((String)output.get("EV_IFRESULT"), (String)output.get("EV_IFMSG"), results);
-				info("Got (" + resultCount + ") Parameters From SAP!");
+				info("Got (" + resultCount + ") Equipment From SAP!");
 			} else {
-				info("Failed to get Parameters From SAP!");
+				info("Failed to get Equipment From SAP!");
 			}			
 		} catch (Exception e) {
-			System.out.println("Failed to get Parameters From SAP!");
-			LOGGER.log(Level.SEVERE, null, e);
+			LOGGER.severe("Failed to get Equipment From SAP!" + e.getMessage());
 		}
 	}
 	
 	private void info(String msg) {
 		LOGGER.info(msg);
-		//System.out.println(msg);
 	}
 	
 	private boolean isEmpty(Object obj) {

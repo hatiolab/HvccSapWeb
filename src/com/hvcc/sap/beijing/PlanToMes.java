@@ -10,7 +10,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.logging.Level;
 
 import com.hvcc.sap.MesUpdater;
 import com.hvcc.sap.RfcSearcher;
@@ -24,7 +23,7 @@ import com.hvcc.sap.util.DateUtils;
 public class PlanToMes {
 	
 	private static final Logger LOGGER = Logger.getLogger(PlanToMes.class.getName());
-	public static final String INSERT_SQL = "INSERT INTO INF_SAP_PLAN(IFSEQ, WERKS, ARBPL, EQUNR, MATNR, KUNNR, VERID, DISPD, ZSHIFTSEQ1, ZSHIFT1, ZSHIFTSEQ2, ZSHIFT2, ZSHIFTSEQ3, ZSHIFT3, ERNAM, ERDAT, ERZET, AENAM, AEDAT, AEZET, IFRESULT, IFFMSG, MES_STAT, MES_UPDDT) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE)";
+	public static final String INSERT_SQL = "INSERT INTO INF_SAP_PLAN(IFSEQ,WERKS,ARBPL,EQUNR,MATNR,KUNNR,DISPD,ZSHIFTSEQ1,ZSHIFT1,ZSHIFTSEQ2,ZSHIFT2,ZSHIFTSEQ3,ZSHIFT3,MEINS,ERDAT,ERZET,ERNAM,AEDAT,AEZET,AENAM,IFRESULT,IFFMSG,MES_STAT,MES_ISTDT) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE)";
 	public static final String RFC_FUNC_NAME = "ZPPG_EA_PROD_PLANNING";
 	public static final String RFC_OUT_TABLE = "ET_PLAN";
 	
@@ -66,20 +65,24 @@ public class PlanToMes {
 			List<Object> parameter = new ArrayList<Object>();
 			
 			// AENAM : MES_USER ,ERZET : 15:14:08 ,KUNNR : 0000010189 ,IFMSG : COMMUNICATION_FAILURE ,IFRESULT : S ,ERDAT : 2014-02-05 ,WERKS : GT10 ,ERNAM : M0010-20 ,EQUNR :  ,AEZET : 17:14:10 ,ZSEQ1 : 1.000 ,IFSEQ : 0000000003 ,ZSEQ2 : 2.000 ,ZSEQ3 : 0 ,AEDAT : 2014-02-06 ,ZSHIFT2 : 490.000 ,ZSHIFT3 : 0 ,ARBPL : 6ATLA ,DISPD : 2014-02-06 ,ZSHIFT1 : 490.000 ,MEINS :  ,MATNR : F124ATBAA05 ,CHARG :  ,
+			// IFSEQ,WERKS,ARBPL,EQUNR,MATNR,KUNNR,DISPD,ZSHIFTSEQ1,ZSHIFT1,ZSHIFTSEQ2,ZSHIFT2,ZSHIFTSEQ3,ZSHIFT3,MEINS,ERDAT,ERZET,ERNAM,AEDAT,AEZET,AENAM,IFRESULT,IFFMSG,MES_STAT,MES_ISTDT
 			parameter.add(record.get("IFSEQ"));
 			parameter.add(record.get("WERKS"));
 			parameter.add(record.get("ARBPL"));
 			parameter.add((record.get("EQUNR") == null || record.get("EQUNR").toString().equals("")) ? "EMPTY" : record.get("EQUNR"));
 			parameter.add(record.get("MATNR"));
 			parameter.add(record.get("KUNNR"));
-			parameter.add((record.get("VERID") == null || record.get("VERID").toString().equals("")) ? "1111" : record.get("VERID"));
 			parameter.add(record.get("DISPD"));
-			parameter.add(record.get("ZSEQ1"));
+			//parameter.add(record.get("ZSEQ1"));
+			parameter.add(record.get("ZSHIFTSEQ1"));
 			parameter.add(record.get("ZSHIFT1"));
-			parameter.add(record.get("ZSEQ2"));
+			//parameter.add(record.get("ZSEQ2"));
+			parameter.add(record.get("ZSHIFTSEQ2"));
 			parameter.add(record.get("ZSHIFT2"));
-			parameter.add(record.get("ZSEQ3"));
+			//parameter.add(record.get("ZSEQ3"));
+			parameter.add(record.get("ZSHIFTSEQ3"));
 			parameter.add(record.get("ZSHIFT3"));
+			parameter.add(record.get("MEINS"));
 			parameter.add(record.get("ERNAM"));
 			parameter.add(record.get("ERDAT"));
 			parameter.add(record.get("ERZET"));
@@ -116,8 +119,7 @@ public class PlanToMes {
 				info("Failed to get Plans From SAP!");
 			}			
 		} catch (Exception e) {
-			System.out.println("Failed to get Plans From SAP!");
-			LOGGER.log(Level.SEVERE, null, e);
+			LOGGER.severe("Failed to get Plans From SAP! " + e.getMessage());
 		}	
 	}
 	

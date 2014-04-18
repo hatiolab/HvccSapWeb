@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.logging.Level;
 
 import com.hvcc.sap.MesSearcher;
 import com.hvcc.sap.MesUpdater;
@@ -64,9 +63,16 @@ public class ScrapToSap {
 	 * @return 
 	 * @throws Exception
 	 */
-	public boolean updateStatus(String mesId, String status) throws Exception {
-		String sql = "UPDATE INF_SAP_SCRAP SET IFRESULT = '" + status + "' WHERE MES_ID = '" + mesId + "'";
-		return new MesUpdater().update(sql);
+	public boolean updateStatus(String mesId, String status, String msg) throws Exception {
+		String preparedSql = "UPDATE INF_SAP_SCRAP SET IFRESULT = ?, IFFMSG = ? WHERE MES_ID = ?";
+		List parameters = new ArrayList();
+		List param = new ArrayList();
+		param.add(status);
+		param.add(msg);
+		param.add(mesId);
+		parameters.add(param);
+		int result = new MesUpdater().update(preparedSql, parameters);
+		return result > 0;
 	}
 	
 	/**
@@ -92,8 +98,7 @@ public class ScrapToSap {
 				this.info("No scrap data to interface!");
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
-			LOGGER.log(Level.SEVERE, null, ex);
+			LOGGER.severe(ex.getMessage());
 		}	
 	}
 	
@@ -103,10 +108,14 @@ public class ScrapToSap {
 		
 		try {
 			output = this.callRfc(inputParam);
-			this.updateStatus(mesId, "Y");
-		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, null, "Error - MES_ID : " + mesId + ", MSG : " + e.getMessage());
-			this.updateStatus(mesId, "E");
+			this.updateStatus(mesId, "Y", null);
+		} catch (Throwable th) {
+			String msg = "Error - MES_ID : " + mesId + ", MSG : " + th.getMessage();
+			LOGGER.severe(msg);
+			
+			if(msg.length() > 250) 
+				msg = msg.substring(0, 250);
+			this.updateStatus(mesId, "E", msg);
 		}
 		
 		return output;
