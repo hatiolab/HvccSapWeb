@@ -16,7 +16,13 @@
             <group>Every10MinGroup</group>
             <description>This is ScrapToSapJob</description>
             <job-class>com.hvcc.sap.jobs.ScrapToSapJob</job-class>
-        </job>       
+        </job>
+        <job>
+            <name>PlanToMesJob</name>
+            <group>EveryDayGroup</group>
+            <description>This is PlanToMesJob</description>
+            <job-class>com.hvcc.sap.jobs.PlanToMesJob</job-class>
+        </job>         
         <!--job>
             <name>Test1Job</name>
             <group>Every5MinGroup</group>
@@ -51,6 +57,15 @@
                 <job-name>ScrapToSapJob</job-name>
                 <job-group>Every10MinGroup</job-group>
                 <cron-expression>0 0/2 * * * ?</cron-expression>
+            </cron>
+        </trigger>
+        <trigger>
+            <cron>
+                <name>realTimeTrigger</name>
+                <group>REAL_TRIG_GROUP_DAY</group>
+                <job-name>PlanToMesJob</job-name>
+                <job-group>EveryDayGroup</job-group>
+                <cron-expression>0 0/5 * * * ?</cron-expression>
             </cron>
         </trigger>        
         <!--trigger>

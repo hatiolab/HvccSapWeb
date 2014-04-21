@@ -39,7 +39,7 @@ public class SapConnectionPool {
 		    	String sClient = props.getProperty("client", "120");
 		    	String sUser = props.getProperty("user", "C000-I002");
 		    	String sPassword = props.getProperty("password", "hvccglobal");
-		    	String sHostName = props.getProperty("ip", "190.1.5.119");
+		    	String sHostName = props.getProperty("ip", "sapqas.hvccglobal.com");
 		    	String sSystem = props.getProperty("system", "00");
 		    	String sLanguage = null;
 				instance = new SapConnectionPool(sID, sMaxCon, sClient, sUser, sPassword, sLanguage, sHostName, sSystem);

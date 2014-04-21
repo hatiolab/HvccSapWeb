@@ -113,8 +113,12 @@ public class PlanToMes {
 			String ifresult = output.get("EV_IFRESULT").toString();
 			if("S".equals(ifresult)) {
 				List<Map<String, Object>> results = (List<Map<String, Object>>)output.get(RFC_OUT_TABLE);
-				resultCount = this.updateToMes((String)output.get("EV_IFRESULT"), (String)output.get("EV_IFMSG"), results);
-				info("Got (" + resultCount + ") Plans From SAP!");
+				if(results.isEmpty()) {
+					info("Got 0 Plans From SAP!");
+				} else {
+					resultCount = this.updateToMes((String)output.get("EV_IFRESULT"), (String)output.get("EV_IFMSG"), results);
+					info("Got (" + resultCount + ") Plans From SAP!");
+				}
 			} else {
 				info("Failed to get Plans From SAP!");
 			}			
@@ -125,7 +129,6 @@ public class PlanToMes {
 	
 	private void info(String msg) {
 		LOGGER.info(msg);
-		System.out.println(msg);
 	}
 	
 	@SuppressWarnings("rawtypes")
