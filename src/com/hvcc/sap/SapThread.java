@@ -4,9 +4,7 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 import com.hvcc.sap.beijing.ActualToSap;
-import com.hvcc.sap.beijing.BatchToMes;
-import com.hvcc.sap.beijing.BomToMes;
-import com.hvcc.sap.beijing.MachineToMes;
+import com.hvcc.sap.beijing.ProductToMes;
 import com.hvcc.sap.beijing.ParameterToMes;
 import com.hvcc.sap.beijing.PlanToMes;
 import com.hvcc.sap.beijing.ScrapToSap;
@@ -22,78 +20,65 @@ public class SapThread implements Runnable {
 	public void run() {
 		
 		while(running) {
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-			}
+			this.sleep(60000);
 						
-			LOGGER.info("Run...");
-			
 			count++;
+			
 			this.ifcActual();
 			this.ifcScrap();
-			this.ifcPlan();
 			
-			// 10분에 한번씩 master
 			if(count % 10 == 0) {
 				count = 0;
+				this.ifcPlan();
 				this.ifcProduct();
-				this.ifcBatch();
-				this.ifcMachine();
 				this.ifcParameter();
 			}
 		}
 	}
 	
+	private void sleep(long millisecond) {
+		try {
+			Thread.sleep(millisecond);
+		} catch (InterruptedException e) {
+		}
+	}
+	
 	private void ifcActual() {
+		this.sleep(2000);
 		LOGGER.info("Actual ....");
 		ActualToSap actual = new ActualToSap();
 		actual.execute();
 	}
 	
 	private void ifcScrap() {
+		this.sleep(2000);
 		LOGGER.info("Scrap ....");
 		ScrapToSap actual = new ScrapToSap();
 		actual.execute();
 	}
 
 	private void ifcPlan() {
+		this.sleep(2000);
 		LOGGER.info("Plan ....");
 		String[] dateInfo = this.getDateInfo();
 		PlanToMes plan = new PlanToMes();
-		
-		LOGGER.info("from date : " + dateInfo[0] + ", to date : " + dateInfo[1]);
-		plan.execute(dateInfo[0], dateInfo[1]);
+		plan.execute("", dateInfo[0], dateInfo[1]);
 	}
 	
 	private void ifcProduct() {
+		this.sleep(2000);
 		LOGGER.info("Product ....");
 		String[] dateInfo = this.getDateInfo();
-        BomToMes bomToMes = new BomToMes();
-        
-        
-        bomToMes.execute(dateInfo[0], dateInfo[1]);
-	}
-	
-	private void ifcMachine() {
-		LOGGER.info("Machine ....");
-		String[] dateInfo = this.getDateInfo();
-        MachineToMes machineToMes = new MachineToMes();
-        machineToMes.execute(dateInfo[0], dateInfo[1]);
+        ProductToMes productToMes = new ProductToMes();
+        productToMes.execute("", dateInfo[0], dateInfo[1]);
 	}
 	
 	private void ifcParameter() {
-		LOGGER.info("Parameter ....");
+		this.sleep(2000);
+		LOGGER.info("Machine ....");
 		String[] dateInfo = this.getDateInfo();
-        ParameterToMes param = new ParameterToMes();
-        param.execute(dateInfo[0], dateInfo[1]);		
-	}
-	
-	private void ifcBatch() {
-		LOGGER.info("Batch ....");
-		String[] dateInfo = this.getDateInfo();
-        BatchToMes batch = new BatchToMes();
-        batch.execute(dateInfo[0], dateInfo[1]);
+        ParameterToMes paramToMes = new ParameterToMes();
+        paramToMes.execute("", dateInfo[0], dateInfo[1]);
 	}
 	
 	private String[] getDateInfo() {
