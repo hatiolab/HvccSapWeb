@@ -61,14 +61,14 @@ public class RfcSearcher {
 			// output table 처리 
 			this.rfcOutTable(function, outTableName, retVal);
 			
-		} catch (Exception e) {
-			throw e;
+		} catch (Throwable th) {
+			throw new Exception(th);
 			
 		} finally {
 			repository = null;
 			if (connection != null) { 
 				sapPool.releaseConnection(connection); 
-			}	
+			}
 		}
 		
 		return retVal;
@@ -167,8 +167,8 @@ public class RfcSearcher {
 					this.rfcOutTable(function, outTableNames[i], retVal);
 				}
 			}			
-		} catch (Exception e) {
-			throw e;
+		} catch (Throwable th) {
+			throw new Exception(th);
 			
 		} finally {
 			repository = null;

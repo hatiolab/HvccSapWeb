@@ -26,7 +26,6 @@ public class SapContextListener implements ServletContextListener {
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
 		LOGGER.info("Sap Context Listener started!");
-		//ServletContext context = event.getServletContext();
         ThreadFactory daemonFactory = new SapThreadFactory();
         this.executor = Executors.newSingleThreadExecutor(daemonFactory);
         SapThread task = new SapThread();

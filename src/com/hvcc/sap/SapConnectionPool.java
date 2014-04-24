@@ -3,14 +3,13 @@
  */
 package com.hvcc.sap;
 
-import java.io.InputStream;
-import java.util.Properties;
-
 import com.sap.mw.jco.IRepository;
 import com.sap.mw.jco.JCO;
 
 /**
  * SAP Connection Pool
+ * 
+ * 접속 상태 체크, 리커넥트 가능
  * 
  * @author Shortstop
  */
@@ -20,44 +19,54 @@ public class SapConnectionPool {
 	private static SapConnectionPool instance = null;
 	
 	public SapConnectionPool(String sid, int maxcons, String client, String userid, String passwd, String lang, String server, String sysno) 
-	throws Exception {
-		try {
-			// Create SAP Connection Pool
-			JCO.addClientPool(sid, maxcons, client, userid, passwd, lang, server, sysno);
-			SID = sid;
-		} catch (Throwable th) {
-			throw new Exception(th);
-		}
+	throws Throwable {
+		// Create SAP Connection Pool
+		JCO.addClientPool(sid, maxcons, client, userid, passwd, lang, server, sysno);
+		SID = sid;
 	}
 
-	public static SapConnectionPool getInstance() throws Exception {
+	public static SapConnectionPool getInstance() throws Throwable {
 		if (instance == null) { 
-		      try {
-		    	Properties props = SapConnectionPool.loadProperties();
-		    	String sID = props.getProperty("sap.sid", "GQA");
-		    	int sMaxCon = Integer.parseInt(props.getProperty("sap.max_con", "10"));
-		    	String sClient = props.getProperty("sap.client", "120");
-		    	String sUser = props.getProperty("sap.user", "C000-I002");
-		    	String sPassword = props.getProperty("sap.password", "hvccglobal");
-		    	String sHostName = props.getProperty("sap.ip", "sapqas.hvccglobal.com");
-		    	String sSystem = props.getProperty("sap.system", "00");
-		    	String sLanguage = props.getProperty("sap.language", "ZH");
-				instance = new SapConnectionPool(sID, sMaxCon, sClient, sUser, sPassword, sLanguage, sHostName, sSystem);
-		      } catch(Throwable th) {
-		    	  throw new Exception(th);
-		      }
+			instance = new SapConnectionPool(
+					Constants.SAP_SID, 
+					Constants.SAP_MAX_CON, 
+					Constants.SAP_CLIENT, 
+					Constants.SAP_USER, 
+					Constants.SAP_PASSWORD, 
+					Constants.SAP_LANG, 
+					Constants.SAP_HOST, 
+					Constants.SAP_SYSTEM);
 		}
 
 		return instance;
 	}
 	
-	public static Properties loadProperties() throws Exception {
-		InputStream is = SapConnectionPool.class.getResourceAsStream("/resources/sap.config.properties");
-	    Properties props = new Properties();
-	    props.load(is);
-	    return props;
+	/**
+	 * connection이 살아있는지 체크
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean isAlive() throws Exception {
+		if(instance == null)
+			return false;
+		
+		return instance.getConnection().isAlive();
 	}
 	
+	/**
+	 * connection의 상태를 리턴 
+	 * 
+	 * @return JCO.STATE_DISCONNECTED, JCO.STATE_CONNECTED, JCO.STATE_BUSY, JCO.STATE_USED
+	 * @throws Exception
+	 */
+	/*public byte getState() throws Exception {
+		if(instance == null)
+			return JCO.STATE_DISCONNECTED;
+		
+		return instance.getConnection().getState();
+	}*/
+		
 	public JCO.Function createFunction(IRepository mRepository, String name) throws Exception {
 		return mRepository.getFunctionTemplate(name.toUpperCase()).getFunction();
 	}

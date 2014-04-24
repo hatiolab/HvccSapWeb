@@ -71,8 +71,8 @@ public class RfcInvoker {
 					retVal.put(outputName, outputs.getValue(outputName));
 				}
 			}			
-		} catch (Exception e) {
-			throw e;
+		} catch (Throwable th) {
+			throw new Exception(th);
 			
 		} finally {
 			repository = null;

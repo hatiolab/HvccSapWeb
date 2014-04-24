@@ -14,24 +14,26 @@ public class SapThread implements Runnable {
 
 	private static final Logger LOGGER = Logger.getLogger(SapThread.class.getName());
 	private boolean running = true;
-	private int count = 1;
+	private int count = 0;
 	
 	@Override
 	public void run() {
 		
 		while(running) {
-			this.sleep(60000);
-						
+			this.sleep(Constants.EXE_INTERVAL);
+			
 			count++;
+
+			if(this.checkSap()) {
+				this.ifcActual();
+				this.ifcScrap();
 			
-			this.ifcActual();
-			this.ifcScrap();
-			
-			if(count % 10 == 0) {
-				count = 0;
-				this.ifcPlan();
-				this.ifcProduct();
-				this.ifcParameter();
+				if(count % 10 == 0) {
+					count = 0;
+					this.ifcPlan();
+					this.ifcProduct();
+					this.ifcParameter();
+				}
 			}
 		}
 	}
@@ -43,22 +45,29 @@ public class SapThread implements Runnable {
 		}
 	}
 	
+	private boolean checkSap() {
+		try {
+			return SapConnectionPool.getInstance().isAlive();
+		} catch(Throwable th) {
+			return false;
+		}
+	}
+	
 	private void ifcActual() {
-		this.sleep(2000);
 		LOGGER.info("Actual ....");
 		ActualToSap actual = new ActualToSap();
 		actual.execute();
 	}
 	
 	private void ifcScrap() {
-		this.sleep(2000);
+		this.sleep(Constants.EXE_RFC_INTERVAL);
 		LOGGER.info("Scrap ....");
 		ScrapToSap actual = new ScrapToSap();
 		actual.execute();
 	}
 
 	private void ifcPlan() {
-		this.sleep(2000);
+		this.sleep(Constants.EXE_RFC_INTERVAL);
 		LOGGER.info("Plan ....");
 		String[] dateInfo = this.getDateInfo();
 		PlanToMes plan = new PlanToMes();
@@ -66,7 +75,7 @@ public class SapThread implements Runnable {
 	}
 	
 	private void ifcProduct() {
-		this.sleep(2000);
+		this.sleep(Constants.EXE_RFC_INTERVAL);
 		LOGGER.info("Product ....");
 		String[] dateInfo = this.getDateInfo();
         ProductToMes productToMes = new ProductToMes();
@@ -74,8 +83,8 @@ public class SapThread implements Runnable {
 	}
 	
 	private void ifcParameter() {
-		this.sleep(2000);
-		LOGGER.info("Machine ....");
+		this.sleep(Constants.EXE_RFC_INTERVAL);
+		LOGGER.info("Parameter ....");
 		String[] dateInfo = this.getDateInfo();
         ParameterToMes paramToMes = new ParameterToMes();
         paramToMes.execute("", dateInfo[0], dateInfo[1]);
@@ -83,8 +92,8 @@ public class SapThread implements Runnable {
 	
 	private String[] getDateInfo() {
 		Date fromDate = new Date();
-        String fromDateStr = DateUtils.format(fromDate, "yyyyMMdd");
-        String toDateStr = DateUtils.format(fromDate, "yyyyMMdd");
+        String fromDateStr = DateUtils.format(fromDate, Constants.SAP_DATEFORMAT);
+        String toDateStr = DateUtils.format(fromDate, Constants.SAP_DATEFORMAT);
         String[] str = new String[2];
         str[0] = fromDateStr;
         str[1] = toDateStr;
