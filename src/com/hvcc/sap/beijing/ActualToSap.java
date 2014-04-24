@@ -31,7 +31,8 @@ public class ActualToSap {
 	 */
 	public Map<String, Object> callRfc(Map<String, Object> inputParams) throws Exception {
 		List<String> outputParams = new ArrayList<String>();
-		outputParams.add("ES_RESULT");
+		outputParams.add("EV_RESULT");
+		outputParams.add("EV_MSG");
 		outputParams.add("EV_IFSEQ");
 		
 		LOGGER.info("RFC [" + RFC_FUNC_NAME + "] Call!");
@@ -45,7 +46,7 @@ public class ActualToSap {
 	 * @throws Exception
 	 */
 	public List<Map<String, Object>> selectActuals() throws Exception {
-		String sql = "SELECT MES_ID, IFSEQ, WERKS, ARBPL, EQUNR, LOGRP, VAART, MATNR, CHARG, KUNNR, BUDAT, PDDAT, ERFMG FROM INF_SAP_ACTUAL WHERE IFRESULT = 'N'"; 
+		String sql = "SELECT MES_ID, IFSEQ, WERKS, ARBPL, EQUNR, LOGRP, VAART, MATNR, CHARG, KUNNR, BUDAT, PDDAT, ERFMG, SERIAL_NO, LOT_NUMBER FROM INF_SAP_ACTUAL WHERE IFRESULT = 'N'"; 
 		return new MesSearcher().search(sql);
 	}
 	
@@ -78,21 +79,37 @@ public class ActualToSap {
 	public void execute() {
 		try {
 			List<Map<String, Object>> actuals = this.selectActuals();
+			
 			if(!actuals.isEmpty()) {
 				int actualCount = actuals.size();
 				for(int i = 0 ; i < actualCount ; i++) {
 					Map<String, Object> inputParam = actuals.get(i);
 					String mesId = (String)inputParam.remove("MES_ID");
 					Map<String, Object> output = this.executeRecord(mesId, inputParam);
+					
 					if(output != null && output.containsKey("EV_IFSEQ")) {
 						this.info("Actual result (EV_IFSEQ) : " + output.get("EV_IFSEQ").toString());
 					}
+					
+					if(output != null && output.containsKey("EV_RESULT")) {
+						String evResult = (String)output.get("EV_RESULT");
+						this.info("Actual result (EV_RESULT) : " + evResult);
+						
+						// EV_RESULT가 실패이면 INF_SAP_ACTUAL 테이블에 메시지와 함께 업데이트
+						if(evResult != "S") {
+							String evMsg = (String)output.get("EV_MSG");
+							this.info("Actual result (EV_MSG) : " + evMsg);
+							if(evMsg.length() > 250) 
+								evMsg = evMsg.substring(0, 250);							
+							this.updateStatus(mesId, evResult, evMsg);
+						}
+					}					
 				}
 			} else {
 				this.info("No actual data to interface!");
 			}
-		} catch (Exception ex) {
-			LOGGER.severe(ex.getMessage());
+		} catch (Throwable th) {
+			LOGGER.severe(th.getMessage());
 		}
 	}
 	

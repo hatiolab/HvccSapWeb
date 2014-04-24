@@ -10,7 +10,7 @@
     	<welcome-file>default.jsp</welcome-file>
   	</welcome-file-list>
   
-	<context-param>
+	<!--context-param>
 		<param-name>quartz:config-file</param-name>
 		<param-value>resources/quartz.properties</param-value>
 	</context-param>
@@ -37,8 +37,12 @@
 			<param-value>true</param-value>
 		</init-param>
 		<load-on-startup>2</load-on-startup>
-	</servlet>
+	</servlet-->
 	
+	<listener>
+         <listener-class>com.hvcc.sap.SapContextListener</listener-class>
+	</listener>
+		
 	<resource-ref>
 		<description>MES Connection</description>
 		<res-ref-name>jdbc/oracle</res-ref-name>

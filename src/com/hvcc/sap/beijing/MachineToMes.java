@@ -15,9 +15,11 @@ import com.hvcc.sap.util.DateUtils;
 public class MachineToMes {
 	
 	private static final Logger LOGGER = Logger.getLogger(MachineToMes.class.getName());
-	public static final String INSERT_SQL = "INSERT INTO INF_SAP_EQUIPMENT(IFSEQ, WERKS, ZPTYP, ZDEPT, ARBPL, ZMACN, ZMKEY, KTEXT, ZTEXT, ERDAT, ERZET, ERNAM, AEDAT, AEZET, AENAM, IFRESULT, IFFMSG, MES_STAT, MES_ISTDT) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE)";
-	public static final String RFC_FUNC_NAME = "ZRFC_PPG_EQUIPMENT";
-	public static final String RFC_OUT_TABLE = "ET_EQUIPMENT";
+	public static final String MC_INSERT_SQL = "INSERT INTO INF_SAP_EQUIPMENT(IFSEQ, WERKS, ZPTYP, ZDEPT, ARBPL, ZMACN, ZKEY, KTEXT, ZTEXT, ERDAT, ERZET, ERNAM, AEDAT, AEZET, AENAM, IFRESULT, IFFMSG, MES_STAT, MES_ISTDT) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE)";
+	public static final String PARAM_INSERT_SQL = "INSERT INTO INF_SAP_PARAMETER(IFSEQ, WERKS, ZPTYP, ZDEPT, ARBPL, ZMACN, MATNR, VERID, ZMKEY, ZUPH, LOTQT, VGW01, MEINS, ERDAT, ERZET, ERNAM, AEDAT, AEZET, AENAM, IFRESULT, IFFMSG, MES_STAT, MES_ISTDT) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE)";
+	public static final String RFC_FUNC_NAME = "ZPPG_EA_PLAN_PARAM";
+	public static final String RFC_OUT_TABLE_1 = "ET_ORG"; // MACHINE
+	public static final String RFC_OUT_TABLE_2 = "ET_PARAM"; // PARAMETER
 	
 	/**
 	 * call rfc
@@ -29,18 +31,23 @@ public class MachineToMes {
 	 */
 	public Map<String, Object> callRfc(String fromDateStr, String toDateStr) throws Exception {
 		Map<String, Object> inputParams = new HashMap<String, Object>();
-		inputParams.put("IV_WERKS", "GT10");
+		inputParams.put("IV_WERKS", "CN10");
 		inputParams.put("IV_FDATE", fromDateStr);
 		inputParams.put("IV_TDATE", toDateStr);
 		// 처음 요청일 경우 blank, 재전송 요청일 경우 'X'
-		inputParams.put("IV_CHECK", "");
+		inputParams.put("IV_CHECK", "X");
 
 		List<String> outputParams = new ArrayList<String>();
 		outputParams.add("EV_IFRESULT");
 		outputParams.add("EV_IFMSG");
 		
 		LOGGER.info("RFC [" + RFC_FUNC_NAME + "] Call!");
-		Map<String, Object> output = new RfcSearcher().callFunction(RFC_FUNC_NAME, inputParams, outputParams, RFC_OUT_TABLE);
+		
+		String[] outTables = new String[2];
+		outTables[0] = RFC_OUT_TABLE_1;
+		outTables[1] = RFC_OUT_TABLE_2;
+		
+		Map<String, Object> output = new RfcSearcher().callFunction(RFC_FUNC_NAME, inputParams, outputParams, outTables);
 		return output;
 	}
 	
@@ -50,13 +57,14 @@ public class MachineToMes {
 	 * @param results
 	 * @throws Exception
 	 */
-	public int updateToMes(String ifResult, String fmsg, List<Map<String, Object>> results) throws Exception {
+	public int createMachineData(String ifResult, String fmsg, List<Map<String, Object>> results) throws Exception {
 		List<List<Object>> parameters = new ArrayList<List<Object>>();
 		int resultCnt = results.size();
 		
 		for(int i = 0 ; i < resultCnt ; i++) {
 			Map<String, Object> record = (Map<String, Object>)results.get(i);
 			this.showMap(record);
+			
 			
 			if(this.isEmpty(record.get("IFSEQ")) || 
 				this.isEmpty(record.get("WERKS")) || 
@@ -68,6 +76,7 @@ public class MachineToMes {
 				continue;
 			}
 			
+			// IFSEQ, WERKS, ZPTYP, ZDEPT, ARBPL, ZMACN, ZKEY, KTEXT, ZTEXT, ERDAT, ERZET, ERNAM, AEDAT, AEZET, AENAM, IFRESULT, IFFMSG, MES_STAT, MES_ISTDT
 			List<Object> parameter = new ArrayList<Object>();
 			parameter.add(record.get("IFSEQ"));
 			parameter.add(record.get("WERKS"));
@@ -75,7 +84,7 @@ public class MachineToMes {
 			parameter.add(record.get("ZDEPT"));
 			parameter.add(record.get("ARBPL"));
 			parameter.add(record.get("ZMACN"));
-			parameter.add(record.get("ZMKEY"));
+			parameter.add(record.get("ZKEY"));
 			parameter.add(record.get("KTEXT"));
 			parameter.add(record.get("ZTEXT"));
 			parameter.add(record.get("ERDAT"));
@@ -90,8 +99,83 @@ public class MachineToMes {
 			parameters.add(parameter);
 		}
 
-		return new MesUpdater().update(INSERT_SQL, parameters);
+		int updCnt = 0;
+		try {
+			updCnt = new MesUpdater().update(MC_INSERT_SQL, parameters);
+		} catch (Throwable th) {
+			LOGGER.severe(th.getMessage());
+		}
+		
+		return updCnt;
 	}
+	
+	/**
+	 * update to mes (JDBC)
+	 * 
+	 * @param results
+	 * @throws Exception
+	 */
+	public int createParamData(String ifResult, String fmsg, List<Map<String, Object>> results) throws Exception {
+		
+		if(results == null || results.isEmpty())
+			return 0;
+		
+		List<List<Object>> parameters = new ArrayList<List<Object>>();
+		int resultCnt = results.size();
+		
+		for(int i = 0 ; i < resultCnt ; i++) {
+			Map<String, Object> record = (Map<String, Object>)results.get(i);
+			this.showMap(record);
+			
+			
+			if(this.isEmpty(record.get("IFSEQ")) || 
+				this.isEmpty(record.get("WERKS")) || 
+				this.isEmpty(record.get("ZPTYP")) || 
+				this.isEmpty(record.get("ZDEPT")) || 
+				this.isEmpty(record.get("ARBPL")) || 
+				this.isEmpty(record.get("ZMACN")) ||
+				this.isEmpty(record.get("MATNR")) ||
+				this.isEmpty(record.get("VERID"))) {
+				LOGGER.warning("Required field is empty!");
+				continue;
+			}
+			
+			// IFSEQ, WERKS, ZPTYP, ZDEPT, ARBPL, ZMACN, MATNR, VERID, ZMKEY, ZUPH, LOTQT, VGW01, MEINS, ERDAT, ERZET, ERNAM, AEDAT, AEZET, AENAM, IFRESULT, IFFMSG, MES_STAT, MES_ISTDT
+			List<Object> parameter = new ArrayList<Object>();
+			parameter.add(record.get("IFSEQ"));
+			parameter.add(record.get("WERKS"));
+			parameter.add(record.get("ZPTYP"));
+			parameter.add(record.get("ZDEPT"));
+			parameter.add(record.get("ARBPL"));
+			parameter.add(record.get("ZMACN"));
+			parameter.add(record.get("MATNR"));
+			parameter.add(record.get("VERID"));
+			parameter.add(record.get("ZMKEY"));
+			parameter.add(record.get("ZUPH"));
+			parameter.add(record.get("LOTQT"));
+			parameter.add(record.get("VGW01"));
+			parameter.add(record.get("MEINS"));
+			parameter.add(record.get("ERDAT"));
+			parameter.add(record.get("ERZET"));
+			parameter.add(record.get("ERNAM"));
+			parameter.add(record.get("AEDAT"));
+			parameter.add(record.get("AEZET"));
+			parameter.add(record.get("AENAM"));
+			parameter.add(record.get("IFRESULT"));
+			parameter.add(record.get("IFMSG"));
+			parameter.add("N");
+			parameters.add(parameter);
+		}
+
+		int updCnt = 0;
+		try {
+			updCnt = new MesUpdater().update(PARAM_INSERT_SQL, parameters);
+		} catch (Throwable th) {
+			LOGGER.severe(th.getMessage());
+		}
+		
+		return updCnt;
+	}	
 	
 	/**
 	 * 실행
@@ -108,9 +192,12 @@ public class MachineToMes {
 			output = this.callRfc(fromDateStr, toDateStr);
 			String ifresult = output.get("EV_IFRESULT").toString();
 			if("S".equals(ifresult)) {
-				List<Map<String, Object>> results = (List<Map<String, Object>>)output.get(RFC_OUT_TABLE);
-				resultCount = this.updateToMes((String)output.get("EV_IFRESULT"), (String)output.get("EV_IFMSG"), results);
+				List<Map<String, Object>> mcResults = (List<Map<String, Object>>)output.get(RFC_OUT_TABLE_1);
+				resultCount = this.createMachineData((String)output.get("EV_IFRESULT"), (String)output.get("EV_IFMSG"), mcResults);
 				info("Got (" + resultCount + ") Equipment From SAP!");
+				List<Map<String, Object>> paramResults = (List<Map<String, Object>>)output.get(RFC_OUT_TABLE_2);
+				resultCount = this.createParamData((String)output.get("EV_IFRESULT"), (String)output.get("EV_IFMSG"), paramResults);				
+				info("Got (" + resultCount + ") Param From SAP!");
 			} else {
 				info("Failed to get Equipment From SAP!");
 			}			

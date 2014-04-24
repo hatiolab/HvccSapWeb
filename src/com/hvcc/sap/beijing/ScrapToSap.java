@@ -37,7 +37,8 @@ public class ScrapToSap {
 	 */
 	public Map<String, Object> callRfc(Map<String, Object> inputParams) throws Exception {
 		List<String> outputParams = new ArrayList<String>();
-		outputParams.add("ES_RESULT");
+		outputParams.add("EV_RESULT");
+		outputParams.add("EV_MSG");
 		outputParams.add("EV_IFSEQ");
 		
 		LOGGER.info("RFC [" + RFC_FUNC_NAME + "] Call!");
@@ -92,6 +93,20 @@ public class ScrapToSap {
 					
 					if(output != null && output.containsKey("EV_IFSEQ")) {
 						this.info("Scrap result (EV_IFSEQ) : " + output.get("EV_IFSEQ").toString());
+					}
+					
+					if(output != null && output.containsKey("EV_RESULT")) {
+						String evResult = (String)output.get("EV_RESULT");
+						this.info("Scrap result (EV_RESULT) : " + evResult);
+						
+						// EV_RESULT가 실패이면 INF_SAP_ACTUAL 테이블에 메시지와 함께 업데이트
+						if(evResult != "S") {
+							String evMsg = (String)output.get("EV_MSG");							
+							this.info("Scrap result (EV_MSG) : " + evMsg);
+							if(evMsg.length() > 250) 
+								evMsg = evMsg.substring(0, 250);							
+							this.updateStatus(mesId, evResult, evMsg);
+						}
 					}					
 				}
 			} else {

@@ -35,13 +35,13 @@ public class SapConnectionPool {
 		      try {
 		    	Properties props = SapConnectionPool.loadProperties();
 		    	String sID = props.getProperty("sap.sid", "GQA");
-		    	int sMaxCon = Integer.parseInt(props.getProperty("max_con", "10"));
-		    	String sClient = props.getProperty("client", "120");
-		    	String sUser = props.getProperty("user", "C000-I002");
-		    	String sPassword = props.getProperty("password", "hvccglobal");
-		    	String sHostName = props.getProperty("ip", "sapqas.hvccglobal.com");
-		    	String sSystem = props.getProperty("system", "00");
-		    	String sLanguage = null;
+		    	int sMaxCon = Integer.parseInt(props.getProperty("sap.max_con", "10"));
+		    	String sClient = props.getProperty("sap.client", "120");
+		    	String sUser = props.getProperty("sap.user", "C000-I002");
+		    	String sPassword = props.getProperty("sap.password", "hvccglobal");
+		    	String sHostName = props.getProperty("sap.ip", "sapqas.hvccglobal.com");
+		    	String sSystem = props.getProperty("sap.system", "00");
+		    	String sLanguage = props.getProperty("sap.language", "ZH");
 				instance = new SapConnectionPool(sID, sMaxCon, sClient, sUser, sPassword, sLanguage, sHostName, sSystem);
 		      } catch(Throwable th) {
 		    	  throw new Exception(th);
