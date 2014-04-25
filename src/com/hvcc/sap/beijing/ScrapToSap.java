@@ -4,7 +4,6 @@
 package com.hvcc.sap.beijing;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -12,6 +11,7 @@ import java.util.logging.Logger;
 import com.hvcc.sap.MesSearcher;
 import com.hvcc.sap.MesUpdater;
 import com.hvcc.sap.RfcInvoker;
+import com.hvcc.sap.util.Utils;
 
 /**
  * Scrap Interface : MES --> SAP
@@ -52,7 +52,7 @@ public class ScrapToSap {
 	 * @throws Exception
 	 */
 	public List<Map<String, Object>> selectScraps() throws Exception {
-		String sql = "SELECT MES_ID, IFSEQ, WERKS, ARBPL, EQUNR, LOGRP, VAART, ZVAART, MATNR, IDNRK, BUDAT, PDDAT, ERFMG, MEINS FROM INF_SAP_SCRAP WHERE IFRESULT = 'N'";
+		String sql = "SELECT MES_ID, IFSEQ, WERKS, ARBPL, EQUNR, LOGRP, VAART, ZVAART, MATNR, IDNRK, BUDAT, PDDAT, ERFMG, MEINS FROM INF_SAP_SCRAP WHERE IFRESULT = 'N' AND ROWNUM <= 100";
 		return new MesSearcher().search(sql);
 	}
 	
@@ -82,43 +82,50 @@ public class ScrapToSap {
 	 * @throws Exception
 	 */
 	public void execute() {
+		List<Map<String, Object>> scraps = null;
 		try {
-			List<Map<String, Object>> scraps = this.selectScraps();
-			if(!scraps.isEmpty()) {
-				int scrapCount = scraps.size();
-				for(int i = 0 ; i < scrapCount ; i++) {
-					Map<String, Object> inputParam = scraps.get(i);
-					String mesId = (String)inputParam.remove("MES_ID");
-					Map<String, Object> output = this.executeRecord(mesId, inputParam);
+			scraps = this.selectScraps();
+		} catch (Throwable th) {
+			LOGGER.severe(th.getMessage());
+			return;
+		}			
+			
+		if(scraps != null && !scraps.isEmpty()) {
+			int scrapCount = scraps.size();
+				
+			for(int i = 0 ; i < scrapCount ; i++) {
+				Map<String, Object> inputParam = scraps.get(i);
+				String mesId = (String)inputParam.remove("MES_ID");
+				Map<String, Object> output = this.executeRecord(mesId, inputParam);
 					
-					if(output != null && output.containsKey("EV_IFSEQ")) {
-						this.info("Scrap result (EV_IFSEQ) : " + output.get("EV_IFSEQ").toString());
-					}
-					
-					if(output != null && output.containsKey("EV_RESULT")) {
-						String evResult = (String)output.get("EV_RESULT");
-						this.info("Scrap result (EV_RESULT) : " + evResult);
+				if(output != null) {
+					String ifseq = (String)output.get("EV_IFSEQ");
+					String evResult = (String)output.get("EV_RESULT");
 						
-						// EV_RESULT가 실패이면 INF_SAP_ACTUAL 테이블에 메시지와 함께 업데이트
-						if(evResult != "S") {
-							String evMsg = (String)output.get("EV_MSG");							
-							this.info("Scrap result (EV_MSG) : " + evMsg);
-							if(evMsg.length() > 250) 
-								evMsg = evMsg.substring(0, 250);							
+					if(evResult != null && evResult.equalsIgnoreCase("S")) {
+						LOGGER.info("Scrap IFSEQ : " + ifseq);
+					} else {
+						String evMsg = (String)output.get("EV_MSG");
+						LOGGER.info("Scrap Error Message : " + evMsg);
+						
+						if(evMsg.length() > 250) 
+							evMsg = evMsg.substring(0, 250);
+						
+						try {
 							this.updateStatus(mesId, evResult, evMsg);
+						} catch (Throwable th) {
+							LOGGER.severe("Failed to update status, Error : " + th.getMessage());
 						}
-					}					
+					}
 				}
-			} else {
-				this.info("No scrap data to interface!");
 			}
-		} catch (Exception ex) {
-			LOGGER.severe(ex.getMessage());
-		}	
+		} else {
+			LOGGER.info("No scrap data to interface!");
+		}
 	}
 	
-	private Map<String, Object> executeRecord(String mesId, Map<String, Object> inputParam) throws Exception {
-		this.showMap(inputParam);
+	private Map<String, Object> executeRecord(String mesId, Map<String, Object> inputParam) {
+		Utils.mapToStr(inputParam);
 		Map<String, Object> output = null;
 		
 		try {
@@ -130,32 +137,14 @@ public class ScrapToSap {
 			
 			if(msg.length() > 250) 
 				msg = msg.substring(0, 250);
-			this.updateStatus(mesId, "E", msg);
+			
+			try {
+				this.updateStatus(mesId, "E", msg);
+			} catch (Throwable e) {
+				LOGGER.severe("Failed to update status, Error : " + e.getMessage());
+			}		
 		}
 		
 		return output;
-	}
-	
-	private void info(String msg) {
-		LOGGER.info(msg);
-	}
-	
-	@SuppressWarnings("rawtypes")
-	private void showMap(Map map) {
-		StringBuffer buf = new StringBuffer();
-		Iterator iter = map.keySet().iterator();
-		while(iter.hasNext()) {
-			String key = (String)iter.next();
-			String value = (map.get(key) == null ? "" : map.get(key).toString());
-			buf.append(key);
-			buf.append(" : ");
-			buf.append(value);
-			buf.append(", ");
-		}
-		this.info(buf.toString());
-	}
-	
-	public static void main(String[] args) {
-		new ScrapToSap().execute();
 	}
 }

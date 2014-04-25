@@ -4,7 +4,6 @@
 package com.hvcc.sap.beijing;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -12,9 +11,10 @@ import java.util.logging.Logger;
 import com.hvcc.sap.MesSearcher;
 import com.hvcc.sap.MesUpdater;
 import com.hvcc.sap.RfcInvoker;
+import com.hvcc.sap.util.Utils;
 
 /**
- * Actual MES To SAP
+ * Actual Interface MES To SAP
  *  
  * @author Shortstop
  */
@@ -46,7 +46,7 @@ public class ActualToSap {
 	 * @throws Exception
 	 */
 	public List<Map<String, Object>> selectActuals() throws Exception {
-		String sql = "SELECT MES_ID, IFSEQ, WERKS, ARBPL, EQUNR, LOGRP, VAART, MATNR, CHARG, KUNNR, BUDAT, PDDAT, ERFMG, SERIAL_NO, LOT_NUMBER FROM INF_SAP_ACTUAL WHERE IFRESULT = 'N'"; 
+		String sql = "SELECT MES_ID, IFSEQ, WERKS, ARBPL, EQUNR, LOGRP, VAART, MATNR, CHARG, KUNNR, BUDAT, PDDAT, ERFMG, SERIAL_NO, LOT_NUMBER FROM INF_SAP_ACTUAL WHERE IFRESULT = 'N' AND ROWNUM <= 100"; 
 		return new MesSearcher().search(sql);
 	}
 	
@@ -77,82 +77,71 @@ public class ActualToSap {
 	 * @throws Exception
 	 */
 	public void execute() {
+		List<Map<String, Object>> actuals = null;
 		try {
-			List<Map<String, Object>> actuals = this.selectActuals();
-			
-			if(!actuals.isEmpty()) {
-				int actualCount = actuals.size();
-				for(int i = 0 ; i < actualCount ; i++) {
-					Map<String, Object> inputParam = actuals.get(i);
-					String mesId = (String)inputParam.remove("MES_ID");
-					Map<String, Object> output = this.executeRecord(mesId, inputParam);
-					
-					if(output != null && output.containsKey("EV_IFSEQ")) {
-						this.info("Actual result (EV_IFSEQ) : " + output.get("EV_IFSEQ").toString());
-					}
-					
-					if(output != null && output.containsKey("EV_RESULT")) {
-						String evResult = (String)output.get("EV_RESULT");
-						this.info("Actual result (EV_RESULT) : " + evResult);
-						
-						// EV_RESULT가 실패이면 INF_SAP_ACTUAL 테이블에 메시지와 함께 업데이트
-						if(evResult != "S") {
-							String evMsg = (String)output.get("EV_MSG");
-							this.info("Actual result (EV_MSG) : " + evMsg);
-							if(evMsg.length() > 250) 
-								evMsg = evMsg.substring(0, 250);							
-							this.updateStatus(mesId, evResult, evMsg);
-						}
-					}					
-				}
-			} else {
-				this.info("No actual data to interface!");
-			}
+			actuals = this.selectActuals();
 		} catch (Throwable th) {
 			LOGGER.severe(th.getMessage());
+			return;
+		}			
+			
+		if(actuals != null && !actuals.isEmpty()) {
+			int actualCount = actuals.size();
+				
+			for(int i = 0 ; i < actualCount ; i++) {
+				Map<String, Object> inputParam = actuals.get(i);
+				String mesId = (String)inputParam.remove("MES_ID");
+				Map<String, Object> output = this.executeRecord(mesId, inputParam);
+					
+				if(output != null) {
+					String ifseq = (String)output.get("EV_IFSEQ");
+					String evResult = (String)output.get("EV_RESULT");
+						
+					if(evResult != null && evResult.equalsIgnoreCase("S")) {
+						LOGGER.info("Actual IFSEQ : " + ifseq);
+					} else {
+						String evMsg = (String)output.get("EV_MSG");
+						LOGGER.info("Actual Error Message : " + evMsg);
+						
+						if(evMsg.length() > 250) 
+							evMsg = evMsg.substring(0, 250);
+						
+						try {
+							this.updateStatus(mesId, evResult, evMsg);
+						} catch (Throwable th) {
+							LOGGER.severe("Failed to update status, Error : " + th.getMessage());
+						}
+					}
+				}
+			}
+		} else {
+			LOGGER.info("No actual data to interface!");
 		}
 	}
 	
-	private Map<String, Object> executeRecord(String mesId, Map<String, Object> inputParam) throws Exception {
-		this.showMap(inputParam);
+	private Map<String, Object> executeRecord(String mesId, Map<String, Object> inputParam) {
+		Utils.mapToStr(inputParam);
 		Map<String, Object> output = null;
 		
 		try {
 			output = this.callRfc(inputParam);
 			this.updateStatus(mesId, "Y", null);
-			this.info("MES ID : " + mesId + ", Success!");
+			
 		} catch (Throwable th) {
 			String msg = "Error - MES_ID : " + mesId + ", MSG : " + th.getMessage();
 			LOGGER.severe(msg);
 			
 			if(msg.length() > 250) 
 				msg = msg.substring(0, 250);
-			this.updateStatus(mesId, "E", msg);
+			
+			try {
+				this.updateStatus(mesId, "E", msg);
+			} catch (Throwable e) {
+				LOGGER.severe("Failed to update status, Error : " + e.getMessage());
+			}
 		}
 		
 		return output;
-	}	
-	
-	private void info(String msg) {
-		LOGGER.info(msg);
 	}
 	
-	@SuppressWarnings("rawtypes")
-	private void showMap(Map map) {
-		StringBuffer buf = new StringBuffer();
-		Iterator iter = map.keySet().iterator();
-		while(iter.hasNext()) {
-			String key = (String)iter.next();
-			String value = (map.get(key) == null ? "" : map.get(key).toString());
-			buf.append(key);
-			buf.append(" : ");
-			buf.append(value);
-			buf.append(", ");
-		}
-		this.info(buf.toString());
-	}
-	
-	public static void main(String[] args) {
-		new ActualToSap().execute();
-	}
 }
